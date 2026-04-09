@@ -93,7 +93,7 @@ export default function Header({
             </Button>
           )}
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[#1d1d1f] shrink-0">
-            Project Alpha
+            EQ 管理平台
           </h1>
           {projects.length > 0 && currentProjectId !== null && (
             <div className="hidden sm:flex items-center gap-2 min-w-[200px] max-w-[320px]">

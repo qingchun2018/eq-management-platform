@@ -1,6 +1,6 @@
-# Project Alpha Backend
+# EQ 管理平台后端（EQ Management Platform Backend）
 
-Project Alpha Ticket Management System Backend
+EQ 管理平台 Ticket 管理系统后端，包名 `eq-management-backend`。
 
 ## 技术栈
 
@@ -41,7 +41,7 @@ cp .env.example .env
 psql -U postgres
 
 # 创建数据库
-CREATE DATABASE projectalpha;
+CREATE DATABASE eq_management;
 
 # 退出
 \q
@@ -101,17 +101,17 @@ PostgreSQL 测试可以验证数据库触发器和其他高级功能：
 
 ```bash
 # 1. 创建测试数据库
-psql -U postgres -c "CREATE DATABASE projectalpha_test;"
+psql -U postgres -c "CREATE DATABASE eq_management_test;"
 
 # 2. 运行迁移
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run alembic upgrade head
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run alembic upgrade head
 
 # 3. 运行测试
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run pytest -v
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run pytest -v
 
 # 重置测试数据库（可选）
-psql -U postgres -d projectalpha_test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run alembic upgrade head
+psql -U postgres -d eq_management_test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run alembic upgrade head
 ```
 
 **注意**: PostgreSQL 测试需要先运行 Alembic 迁移来创建数据库触发器。CI 环境会自动使用 PostgreSQL。

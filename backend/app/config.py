@@ -12,11 +12,11 @@ class Settings(BaseSettings):
     )
 
     # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/projectalpha"
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/eq_management"
 
     # API
     API_V1_PREFIX: str = "/api/v1"
-    PROJECT_NAME: str = "Project Alpha"
+    PROJECT_NAME: str = "EQ 管理平台"
 
     # CORS - 使用字符串字段，然后在验证器中解析（须同时包含 localhost 与 127.0.0.1，否则用 IP 打开前端会跨域失败）
     ALLOWED_ORIGINS_STR: str = Field(

@@ -58,7 +58,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md border-black/5 shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-[#1d1d1f]">
-            Project Alpha
+            EQ 管理平台
           </CardTitle>
           <CardDescription>
             {mode === "login" ? "登录以管理 Ticket" : "注册新账号（需后端开启注册）"}

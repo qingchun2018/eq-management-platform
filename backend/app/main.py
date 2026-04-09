@@ -155,6 +155,6 @@ async def health_check():
 @app.get("/")
 async def root():
     return {
-        "message": "Welcome to Project Alpha API",
+        "message": "Welcome to EQ Management Platform API",
         "docs": f"{settings.API_V1_PREFIX}/docs",
     }

@@ -1,4 +1,4 @@
-# Project Alpha 安装指南
+# EQ 管理平台安装指南
 
 ## 系统要求
 
@@ -14,7 +14,7 @@
 
 ```bash
 git clone <repository-url>
-cd project-alpha
+cd eq-management-platform
 ```
 
 ### 2. 安装后端依赖
@@ -37,23 +37,23 @@ cp .env.example .env
 
 # 编辑 .env 文件
 # 设置数据库连接字符串
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management
 ```
 
 ### 4. 设置数据库
 
 ```bash
 # 创建数据库
-createdb projectalpha
+createdb eq_management
 
 # 或者使用 psql
-psql -U postgres -c "CREATE DATABASE projectalpha;"
+psql -U postgres -c "CREATE DATABASE eq_management;"
 
 # 运行数据库迁移
 uv run alembic upgrade head
 
 # （可选）导入种子数据
-psql -U postgres -d projectalpha -f seed.sql
+psql -U postgres -d eq_management -f seed.sql
 ```
 
 ### 5. 安装前端依赖
@@ -106,7 +106,7 @@ curl http://localhost:8000/health
 
 1. 确保 PostgreSQL 服务正在运行
 2. 检查 `.env` 文件中的 `DATABASE_URL` 配置
-3. 确认数据库 `projectalpha` 已创建
+3. 确认数据库 `eq_management` 已创建
 
 ### 端口被占用
 

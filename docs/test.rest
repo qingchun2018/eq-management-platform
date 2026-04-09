@@ -1,4 +1,4 @@
-### Project Alpha API 测试文件
+### EQ 管理平台 API 测试文件
 ### 使用 REST Client 扩展测试 API
 ### 基础 URL
 @baseUrl = http://localhost:8000

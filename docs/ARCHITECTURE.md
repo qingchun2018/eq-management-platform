@@ -1,6 +1,6 @@
-# Project Alpha 架构说明
+# EQ 管理平台架构说明
 
-本文描述 `project-alpha`（Ticket 管理系统）的技术架构、分层与数据流，依据当前仓库源码整理。
+本文描述 EQ 管理平台（Ticket 管理系统，仓库名 `eq-management-platform`）的技术架构、分层与数据流，依据当前仓库源码整理。
 
 ---
 
@@ -192,7 +192,7 @@ sequenceDiagram
 
 ## 7. 与仓库 Skills 的关系说明
 
-本仓库自带的 Agent Skills（例如 `pg-data`）用于在**已连接的 PostgreSQL** 上做自然语言只读查询等场景，**不替代**本文档所描述的 HTTP 与 ORM 架构。Project Alpha 的业务数据仍以本项目的 **REST API + SQLAlchemy + Alembic** 为准。
+本仓库自带的 Agent Skills（例如 `pg-data`）用于在**已连接的 PostgreSQL** 上做自然语言只读查询等场景，**不替代**本文档所描述的 HTTP 与 ORM 架构。EQ 管理平台的业务数据仍以本项目的 **REST API + SQLAlchemy + Alembic** 为准。
 
 ---
 
@@ -200,4 +200,4 @@ sequenceDiagram
 
 | 日期 | 说明 |
 |------|------|
-| 2026-03-30 | 初版：基于当前 `w1/project-alpha` 源码梳理 |
+| 2026-03-30 | 初版：基于当前仓库源码梳理 |

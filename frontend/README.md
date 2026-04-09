@@ -1,4 +1,4 @@
-# Project Alpha Frontend
+# EQ 管理平台前端（eq-management-frontend）
 
 前端应用使用 Vite + React + TypeScript + Tailwind CSS + Shadcn UI 构建。
 

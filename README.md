@@ -1,6 +1,6 @@
-# Project Alpha - Ticket 管理系统
+# EQ 管理平台（EQ Management Platform）- Ticket 管理系统
 
-基于标签的 Ticket 管理工具，提供简洁高效的任务跟踪和分类功能。
+基于标签的 Ticket 管理工具，提供简洁高效的任务跟踪和分类功能。与 GitHub 仓库名 `eq-management-platform` 对应。
 
 ## 技术栈
 
@@ -43,16 +43,16 @@ uv sync
 cp .env.example .env
 
 # 编辑 .env 文件，配置数据库连接
-# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management
 
 # 创建数据库（如果不存在）
-createdb projectalpha
+createdb eq_management
 
 # 运行数据库迁移
 uv run alembic upgrade head
 
 # （可选）导入种子数据
-psql -U postgres -d projectalpha -f seed.sql
+psql -U postgres -d eq_management -f seed.sql
 
 # 启动开发服务器
 uv run uvicorn app.main:app --reload --port 8000
@@ -75,7 +75,7 @@ yarn dev
 ## 项目结构
 
 ```
-project-alpha/
+eq-management-platform/
 ├── backend/          # FastAPI 后端
 │   ├── app/
 │   │   ├── api/     # API 路由
@@ -158,7 +158,7 @@ uv run pytest -v
 创建 `backend/.env.production`:
 
 ```env
-DATABASE_URL=postgresql://user:password@host:5432/projectalpha
+DATABASE_URL=postgresql://user:password@host:5432/eq_management
 ENVIRONMENT=production
 ALLOWED_ORIGINS=https://yourdomain.com
 ```
@@ -187,7 +187,7 @@ make help
 或者使用 `start.sh` 脚本（已废弃，推荐使用 Makefile）：
 
 ```bash
-cd w1/project-alpha
+cd eq-management-platform
 chmod +x start.sh
 ./start.sh
 ```

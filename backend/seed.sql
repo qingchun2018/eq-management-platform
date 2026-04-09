@@ -1,7 +1,7 @@
--- Project Alpha Seed Data
+-- EQ 管理平台（EQ Management Platform）Seed Data
 -- 包含 50 个有意义的 tickets 和多个 tags
 -- 执行方式:
---   Linux/macOS 或已配置 UTF-8 的终端: psql -U postgres -d projectalpha -f seed.sql
+--   Linux/macOS 或已配置 UTF-8 的终端: psql -U postgres -d eq_management -f seed.sql
 --   Windows 若报 GBK/UTF8 编码错误，请在 backend 目录执行:
 --     python scripts/import_seed_utf8.py --reset
 --     （--reset 会先清空表再导入，避免重复键；无需再手设 PGPASSWORD，密码来自 .env）

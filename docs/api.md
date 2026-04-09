@@ -1,4 +1,4 @@
-# Project Alpha API 文档
+# EQ 管理平台 API 文档
 
 ## 基础信息
 

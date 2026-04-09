@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Starting Project Alpha..."
+echo "Starting EQ 管理平台..."
 
 # Start backend
 echo "Starting backend..."
@@ -19,7 +19,7 @@ FRONTEND_PID=$!
 
 echo ""
 echo "=========================================="
-echo "Project Alpha is running!"
+echo "EQ 管理平台 is running!"
 echo "=========================================="
 echo "Backend PID: $BACKEND_PID"
 echo "Frontend PID: $FRONTEND_PID"

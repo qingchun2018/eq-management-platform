@@ -2,7 +2,7 @@
 
 ## 概述
 
-Project Alpha 后端支持两种测试数据库：
+EQ 管理平台 后端支持两种测试数据库：
 
 1. **SQLite** (默认) - 快速、简单，适合基本功能测试
 2. **PostgreSQL** (推荐) - 完整功能，包括数据库触发器、ENUM类型等高级特性
@@ -41,23 +41,23 @@ uv run pytest
 # Ubuntu: sudo apt install postgresql
 
 # 2. 创建测试数据库
-psql -U postgres -c "CREATE DATABASE projectalpha_test;"
+psql -U postgres -c "CREATE DATABASE eq_management_test;"
 
 # 3. 运行数据库迁移（创建表和触发器）
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run alembic upgrade head
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run alembic upgrade head
 ```
 
 #### 运行测试
 
 ```bash
 # 运行所有测试
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run pytest -v
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run pytest -v
 
 # 运行特定测试
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run pytest tests/test_tickets.py -v
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run pytest tests/test_tickets.py -v
 
 # 运行并查看覆盖率
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run pytest -v --cov=app --cov-report=html
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run pytest -v --cov=app --cov-report=html
 ```
 
 #### 重置测试数据库
@@ -66,13 +66,13 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv 
 
 ```bash
 # 方法1: 删除并重建数据库
-psql -U postgres -c "DROP DATABASE IF EXISTS projectalpha_test;"
-psql -U postgres -c "CREATE DATABASE projectalpha_test;"
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run alembic upgrade head
+psql -U postgres -c "DROP DATABASE IF EXISTS eq_management_test;"
+psql -U postgres -c "CREATE DATABASE eq_management_test;"
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run alembic upgrade head
 
 # 方法2: 删除并重建 schema（保留数据库）
-psql -U postgres -d projectalpha_test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run alembic upgrade head
+psql -U postgres -d eq_management_test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run alembic upgrade head
 ```
 
 ## 测试架构
@@ -109,7 +109,7 @@ services:
   postgres:
     image: postgres:17
     env:
-      POSTGRES_DB: projectalpha_test
+      POSTGRES_DB: eq_management_test
 ```
 
 CI 流程：
@@ -132,7 +132,7 @@ uv run pytest -v -k "not test_complete_ticket"
 ### Q: 如何查看 PostgreSQL 中的触发器？
 
 ```bash
-psql -U postgres -d projectalpha_test -c "
+psql -U postgres -d eq_management_test -c "
   SELECT tgname, tgenabled 
   FROM pg_trigger 
   WHERE tgrelid = 'tickets'::regclass 
@@ -148,13 +148,13 @@ A: 检查 `conftest.py` 中的 TRUNCATE 语句是否正确执行。对于 Postgr
 
 ```bash
 # 检查迁移状态
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run alembic current
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run alembic current
 
 # 查看迁移历史
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run alembic history
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run alembic history
 
 # 降级到之前的版本
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/projectalpha_test uv run alembic downgrade -1
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eq_management_test uv run alembic downgrade -1
 ```
 
 ## 环境变量
