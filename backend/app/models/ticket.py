@@ -37,6 +37,11 @@ class Ticket(Base):
     project = relationship("Project", back_populates="tickets")
     tags = relationship("Tag", secondary="ticket_tags", back_populates="tickets")
     created_by = relationship("User", back_populates="tickets_created", foreign_keys=[created_by_id])
+    workflow_steps = relationship(
+        "TicketWorkflowStep",
+        back_populates="ticket",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<Ticket(id={self.id}, title='{self.title}', status={self.status})>"

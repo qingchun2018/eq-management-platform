@@ -37,6 +37,11 @@ class User(Base):
     team = relationship("Team", back_populates="users")
     tickets_created = relationship("Ticket", back_populates="created_by")
     project_memberships = relationship("ProjectMember", back_populates="user", cascade="all, delete-orphan")
+    workflow_step_assignments = relationship(
+        "TicketWorkflowStep",
+        back_populates="assignee",
+        foreign_keys="TicketWorkflowStep.assignee_user_id",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}')>"

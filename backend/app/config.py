@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
     DB_POOL_TIMEOUT: int = 30
+    # 建立连接超时（秒），避免库不可达时长时间挂起导致整站无响应
+    DB_CONNECT_TIMEOUT: int = 10
 
     # 是否允许自助注册（内网可临时开启创建首个账号后关闭）
     AUTH_ALLOW_REGISTER: bool = False

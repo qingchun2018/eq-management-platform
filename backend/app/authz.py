@@ -1,5 +1,7 @@
 """项目与小组级权限判断"""
 
+from typing import Dict, List
+
 from sqlalchemy.orm import Session
 
 from .models.project import Project
@@ -35,6 +37,44 @@ def resolve_effective_project_role(db: Session, user: User, project_id: int) -> 
         .first()
     )
     return pm.role if pm else None
+
+
+def batch_resolve_effective_project_roles(
+    db: Session, user: User, projects: List[Project]
+) -> Dict[int, ProjectRole | None]:
+    """
+    批量解析用户在多个项目下的有效角色，语义与逐条调用 resolve_effective_project_role 一致。
+    用于 /auth/me 等路径，避免对每个项目单独查库（N+1）。
+    """
+    if user.team_id is None or not projects:
+        return {}
+    out: Dict[int, ProjectRole | None] = {}
+    valid = [p for p in projects if p.team_id == user.team_id]
+
+    if user.team_role == TeamRole.TEAM_ADMIN:
+        for p in valid:
+            out[p.id] = ProjectRole.PROJECT_ADMIN
+    elif user.team_role == TeamRole.TEAM_VIEWER:
+        for p in valid:
+            out[p.id] = ProjectRole.VIEWER
+    elif valid:
+        ids = [p.id for p in valid]
+        rows = (
+            db.query(ProjectMember)
+            .filter(
+                ProjectMember.user_id == user.id,
+                ProjectMember.project_id.in_(ids),
+            )
+            .all()
+        )
+        pm_by_pid = {r.project_id: r.role for r in rows}
+        for p in valid:
+            out[p.id] = pm_by_pid.get(p.id)
+
+    for p in projects:
+        if p.id not in out:
+            out[p.id] = None
+    return out
 
 
 def can_read_project(role: ProjectRole | None) -> bool:

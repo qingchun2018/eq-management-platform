@@ -14,7 +14,7 @@ from ..core.security import (
     decode_refresh_token,
     verify_password,
 )
-from ..authz import resolve_effective_project_role
+from ..authz import batch_resolve_effective_project_roles
 from ..crud import project as project_crud
 from ..crud import user as user_crud
 from ..database import get_db
@@ -87,9 +87,10 @@ def read_me(db: Session = Depends(get_db), current_user: User = Depends(get_curr
         if t:
             team_brief = TeamBrief.model_validate(t)
     projects = project_crud.list_accessible_projects(db, current_user)
+    role_map = batch_resolve_effective_project_roles(db, current_user, projects)
     pb: list[ProjectBrief] = []
     for p in projects:
-        r = resolve_effective_project_role(db, current_user, p.id)
+        r = role_map.get(p.id)
         pb.append(
             ProjectBrief(
                 id=p.id,

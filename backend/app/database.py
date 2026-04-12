@@ -1,17 +1,23 @@
+from typing import Any
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from .config import settings
 
-engine = create_engine(
-    settings.sqlalchemy_database_url,
-    pool_pre_ping=True,
-    pool_size=settings.DB_POOL_SIZE,
-    max_overflow=settings.DB_MAX_OVERFLOW,
-    pool_timeout=settings.DB_POOL_TIMEOUT,
-    echo=settings.ENVIRONMENT == "development",
-)
+_url = settings.sqlalchemy_database_url
+_engine_kwargs: dict[str, Any] = {
+    "pool_pre_ping": True,
+    "pool_size": settings.DB_POOL_SIZE,
+    "max_overflow": settings.DB_MAX_OVERFLOW,
+    "pool_timeout": settings.DB_POOL_TIMEOUT,
+    "echo": settings.ENVIRONMENT == "development",
+}
+if _url.startswith("postgresql"):
+    _engine_kwargs["connect_args"] = {"connect_timeout": settings.DB_CONNECT_TIMEOUT}
+
+engine = create_engine(_url, **_engine_kwargs)
 
 
 def check_db_health() -> bool:

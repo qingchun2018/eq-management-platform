@@ -9,8 +9,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import axios from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "sonner";
+
+function formatAuthError(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    if (err.code === "ECONNABORTED") {
+      return "请求超时：请确认本机已启动后端（默认 uvicorn 8000）且 PostgreSQL 可连接";
+    }
+    if (!err.response) {
+      return "无法连接后端：请在 backend 目录启动 API（端口 8000），并检查数据库是否运行";
+    }
+    const raw = err.response.data as { detail?: unknown } | undefined;
+    const d = raw?.detail;
+    if (typeof d === "string") return d;
+  }
+  return "操作失败，请检查网络或账号信息";
+}
 
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
@@ -46,8 +62,7 @@ export default function LoginPage() {
       if (ax.response?.status === 429) {
         return;
       }
-      const msg = ax.response?.data?.detail;
-      toast.error(typeof msg === "string" ? msg : "操作失败，请检查网络或账号信息");
+      toast.error(formatAuthError(err));
     } finally {
       setSubmitting(false);
     }

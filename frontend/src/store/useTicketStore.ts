@@ -52,6 +52,12 @@ interface TicketStore {
   updateTicket: (id: number, data: UpdateTicketData) => Promise<void>;
   deleteTicket: (id: number) => Promise<void>;
   toggleComplete: (id: number) => Promise<void>;
+  /** 完成工作流中当前步骤并流转给下一位 */
+  completeWorkflowStep: (
+    ticketId: number,
+    stepId: number,
+    completionNote?: string,
+  ) => Promise<void>;
   batchComplete: (ids: number[]) => Promise<void>;
   batchDelete: (ids: number[]) => Promise<void>;
 
@@ -211,6 +217,16 @@ export const useTicketStore = create<TicketStore>((set, get) => ({
     try {
       const ticket = get().tickets.find((t) => t.id === id);
       if (ticket) {
+        if (ticket.workflow_steps && ticket.workflow_steps.length > 0) {
+          if (ticket.status === "pending") {
+            toast.error("此 Ticket 已启用顺序工作流，请使用卡片上的「完成本步」依次推进");
+            set({ isLoading: false });
+            return;
+          }
+          toast.error("工作流型 Ticket 不支持一键取消完成");
+          set({ isLoading: false });
+          return;
+        }
         if (ticket.status === "pending") {
           await ticketApi.complete(id);
         } else {
@@ -226,10 +242,35 @@ export const useTicketStore = create<TicketStore>((set, get) => ({
     }
   },
 
+  completeWorkflowStep: async (ticketId, stepId, completionNote) => {
+    set({ isLoading: true, error: null });
+    try {
+      await ticketApi.completeWorkflowStep(ticketId, stepId, {
+        completion_note: completionNote,
+      });
+      await get().fetchTickets();
+      toast.success("本步已完成");
+      set({ isLoading: false });
+    } catch (error) {
+      const detail = axiosDetail(error);
+      set({ error: detail || "完成步骤失败", isLoading: false });
+      toast.error(detail || "完成步骤失败");
+      throw error;
+    }
+  },
+
   batchComplete: async (ids) => {
     set({ isLoading: true, error: null });
     try {
-      await Promise.all(ids.map((id) => ticketApi.complete(id)));
+      const { tickets } = get();
+      const safeIds = ids.filter((id) => {
+        const t = tickets.find((x) => x.id === id);
+        return t && (!t.workflow_steps || t.workflow_steps.length === 0);
+      });
+      if (safeIds.length < ids.length) {
+        toast.info("已跳过含工作流的 Ticket，请在工作流中逐步完成");
+      }
+      await Promise.all(safeIds.map((id) => ticketApi.complete(id)));
       await get().fetchTickets();
       set({ isLoading: false });
     } catch (error) {

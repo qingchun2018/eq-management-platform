@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .api import api_router
@@ -139,7 +140,8 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 # ---------- 健康检查（含 DB） ----------
 @app.get("/health")
 async def health_check():
-    db_ok = check_db_health()
+    # 同步 engine.connect() 若在 async 路由内直接调用会阻塞整个事件循环，导致其它请求（含登录）长时间无响应
+    db_ok = await run_in_threadpool(check_db_health)
     status_val = "ok" if db_ok else "degraded"
     code = 200 if db_ok else 503
     return JSONResponse(

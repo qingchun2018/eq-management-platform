@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..audit import log_action
 from ..authz import can_read_project, can_write_ticket, resolve_effective_project_role
 from ..crud import ticket as crud
+from ..crud import ticket_workflow as workflow_crud
 from ..database import get_db
 from ..deps import ProjectAccess, get_current_user, require_project_read
 from ..models.user import User
@@ -14,6 +15,7 @@ from ..schemas.ticket import (
     TicketListResponse,
     TicketResponse,
     TicketUpdate,
+    WorkflowStepCompleteBody,
 )
 
 router = APIRouter(
@@ -103,6 +105,47 @@ def get_ticket(
     return t
 
 
+@router.post(
+    "/{ticket_id}/workflow/steps/{step_id}/complete",
+    response_model=TicketResponse,
+)
+def complete_workflow_step_api(
+    ticket_id: int,
+    step_id: int,
+    body: WorkflowStepCompleteBody,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """完成当前进行中工作流步骤，并自动流转给下一步负责人；最后一步完成后标记 Ticket 已完成"""
+    t = crud.get_ticket(db, ticket_id)
+    if not t:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+    role = resolve_effective_project_role(db, current_user, t.project_id)
+    if not can_read_project(role):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该 Ticket")
+    try:
+        updated = workflow_crud.complete_workflow_step(
+            db, ticket_id, step_id, current_user, body.completion_note
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+    log_action(
+        db,
+        request=request,
+        user_id=current_user.id,
+        username=current_user.username,
+        action="ticket.workflow.step_complete",
+        resource_type="ticket",
+        resource_id=ticket_id,
+        project_id=updated.project_id,
+        detail={"step_id": step_id},
+    )
+    return updated
+
+
 @router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
 def create_ticket(
     ticket: TicketCreate,
@@ -114,7 +157,11 @@ def create_ticket(
     role = resolve_effective_project_role(db, current_user, ticket.project_id)
     if not can_write_ticket(role):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权在该项目下创建 Ticket")
-    created = crud.create_ticket(db, ticket, created_by_id=current_user.id)
+    try:
+        created = crud.create_ticket(db, ticket, created_by_id=current_user.id)
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     log_action(
         db,
         request=request,
@@ -192,7 +239,10 @@ def complete_ticket(
 ):
     """完成 Ticket"""
     _assert_ticket_write(db, current_user, ticket_id)
-    ticket = crud.complete_ticket(db, ticket_id)
+    try:
+        ticket = crud.complete_ticket(db, ticket_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     log_action(
@@ -217,7 +267,10 @@ def uncomplete_ticket(
 ):
     """取消完成 Ticket"""
     _assert_ticket_write(db, current_user, ticket_id)
-    ticket = crud.uncomplete_ticket(db, ticket_id)
+    try:
+        ticket = crud.uncomplete_ticket(db, ticket_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     log_action(

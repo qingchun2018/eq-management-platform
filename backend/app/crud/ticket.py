@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..models.tag import Tag, ticket_tags
 from ..models.ticket import Ticket, TicketStatus
+from ..models.ticket_workflow_step import TicketWorkflowStep
 from ..schemas.ticket import TicketCreate, TicketUpdate
 from ..utils.search_escape import escape_ilike_pattern
 
@@ -64,7 +65,11 @@ def get_tickets(
     col = sort_map.get(sort_by, Ticket.created_at)
     order_col = col.desc() if sort_order == "desc" else col.asc()
     tickets = (
-        query.options(joinedload(Ticket.created_by), joinedload(Ticket.tags))
+        query.options(
+            joinedload(Ticket.created_by),
+            joinedload(Ticket.tags),
+            joinedload(Ticket.workflow_steps).joinedload(TicketWorkflowStep.assignee),
+        )
         .order_by(order_col)
         .offset(skip)
         .limit(limit)
@@ -77,7 +82,11 @@ def get_tickets(
 def get_ticket(db: Session, ticket_id: int) -> Optional[Ticket]:
     return (
         db.query(Ticket)
-        .options(joinedload(Ticket.created_by), joinedload(Ticket.tags))
+        .options(
+            joinedload(Ticket.created_by),
+            joinedload(Ticket.tags),
+            joinedload(Ticket.workflow_steps).joinedload(TicketWorkflowStep.assignee),
+        )
         .filter(Ticket.id == ticket_id)
         .first()
     )
@@ -91,8 +100,7 @@ def create_ticket(db: Session, ticket: TicketCreate, created_by_id: Optional[int
         created_by_id=created_by_id,
     )
     db.add(db_ticket)
-    db.commit()
-    db.refresh(db_ticket)
+    db.flush()
 
     if ticket.tag_ids:
         tags = (
@@ -101,9 +109,14 @@ def create_ticket(db: Session, ticket: TicketCreate, created_by_id: Optional[int
             .all()
         )
         db_ticket.tags = tags
-        db.commit()
-        db.refresh(db_ticket)
 
+    if ticket.workflow_steps:
+        from . import ticket_workflow as wf
+
+        wf.create_workflow_steps_for_ticket(db, db_ticket, ticket.workflow_steps)
+
+    db.commit()
+    db.refresh(db_ticket)
     return db_ticket
 
 
@@ -144,6 +157,11 @@ def complete_ticket(db: Session, ticket_id: int) -> Optional[Ticket]:
     if not db_ticket:
         return None
 
+    from .ticket_workflow import ticket_has_incomplete_workflow
+
+    if ticket_has_incomplete_workflow(db, ticket_id):
+        raise ValueError("存在未完成的工作流步骤，请按顺序完成各步")
+
     db_ticket.status = TicketStatus.COMPLETED
     db_ticket.completed_at = datetime.now(timezone.utc)
     db.commit()
@@ -155,6 +173,12 @@ def uncomplete_ticket(db: Session, ticket_id: int) -> Optional[Ticket]:
     db_ticket = get_ticket(db, ticket_id)
     if not db_ticket:
         return None
+
+    wf_count = (
+        db.query(TicketWorkflowStep).filter(TicketWorkflowStep.ticket_id == ticket_id).count()
+    )
+    if wf_count > 0:
+        raise ValueError("已启用工作流的 Ticket 不支持一键取消完成，请由管理员在库中调整步骤数据")
 
     db_ticket.status = TicketStatus.PENDING
     db_ticket.completed_at = None

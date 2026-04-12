@@ -6,9 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from ..audit import log_action
-from ..authz import can_create_project, can_manage_project_members, resolve_effective_project_role
+from ..authz import can_create_project, can_manage_project_members, can_read_project, resolve_effective_project_role
 from ..crud import project as project_crud
 from ..crud import project_member as pm_crud
+from ..crud import ticket_workflow as ticket_workflow_crud
 from ..crud import user as user_crud
 from ..database import get_db
 from ..deps import get_current_user
@@ -70,6 +71,20 @@ def create_project(
         detail={"name": body.name},
     )
     return _brief(db, user, p.id)
+
+
+@router.get("/{project_id}/workflow-assignees", response_model=List[UserPublic])
+def list_workflow_assignees(
+    project_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """列出可作为工作流步骤负责人的本组成员（须有项目读权限）"""
+    role = resolve_effective_project_role(db, user, project_id)
+    if not can_read_project(role):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该项目")
+    users = ticket_workflow_crud.list_assignable_users_for_project(db, project_id)
+    return [UserPublic(id=u.id, username=u.username) for u in users]
 
 
 @router.get("/{project_id}", response_model=ProjectBrief)

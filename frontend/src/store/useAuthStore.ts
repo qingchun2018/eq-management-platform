@@ -108,6 +108,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   login: async (username: string, password: string) => {
+    // 清除旧 token，避免并发请求带着过期 access 走 401→刷新链，刷新请求无超时时会长时间卡住
+    clearAllTokens();
     await authApi.login(username, password);
     await get().refreshMe();
   },
