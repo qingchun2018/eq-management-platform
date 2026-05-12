@@ -1,6 +1,7 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
 from ..audit import log_action
@@ -39,12 +40,12 @@ def _parse_tag_ids(tag_ids: Optional[str]) -> Optional[list[int]]:
 def _assert_ticket_write(db: Session, user: User, ticket_id: int):
     t = crud.get_ticket(db, ticket_id)
     if not t:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     role = resolve_effective_project_role(db, user, t.project_id)
     if not can_read_project(role):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该 Ticket")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="无权访问该 Ticket")
     if not can_write_ticket(role):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="只读权限，无法修改")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="只读权限，无法修改")
     return t
 
 
@@ -63,9 +64,9 @@ def list_tickets(
 ):
     """获取某项目下的 Ticket 列表"""
     if sort_by not in ("created_at", "updated_at", "title"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="sort_by 无效")
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="sort_by 无效")
     if sort_order not in ("asc", "desc"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="sort_order 无效")
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="sort_order 无效")
 
     tag_id_list = _parse_tag_ids(tag_ids)
     tickets, total = crud.get_tickets(
@@ -98,10 +99,10 @@ def get_ticket(
     """获取单个 Ticket"""
     t = crud.get_ticket(db, ticket_id)
     if not t:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     role = resolve_effective_project_role(db, current_user, t.project_id)
     if not can_read_project(role):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该 Ticket")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="无权访问该 Ticket")
     return t
 
 
@@ -120,18 +121,18 @@ def complete_workflow_step_api(
     """完成当前进行中工作流步骤，并自动流转给下一步负责人；最后一步完成后标记 Ticket 已完成"""
     t = crud.get_ticket(db, ticket_id)
     if not t:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     role = resolve_effective_project_role(db, current_user, t.project_id)
     if not can_read_project(role):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该 Ticket")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="无权访问该 Ticket")
     try:
         updated = workflow_crud.complete_workflow_step(
             db, ticket_id, step_id, current_user, body.completion_note
         )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     log_action(
         db,
         request=request,
@@ -146,7 +147,7 @@ def complete_workflow_step_api(
     return updated
 
 
-@router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=TicketResponse, status_code=http_status.HTTP_201_CREATED)
 def create_ticket(
     ticket: TicketCreate,
     request: Request,
@@ -156,12 +157,12 @@ def create_ticket(
     """创建 Ticket（须具备项目写权限）"""
     role = resolve_effective_project_role(db, current_user, ticket.project_id)
     if not can_write_ticket(role):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权在该项目下创建 Ticket")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="无权在该项目下创建 Ticket")
     try:
         created = crud.create_ticket(db, ticket, created_by_id=current_user.id)
     except ValueError as e:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     log_action(
         db,
         request=request,
@@ -188,7 +189,7 @@ def update_ticket(
     _assert_ticket_write(db, current_user, ticket_id)
     updated_ticket = crud.update_ticket(db, ticket_id, ticket)
     if not updated_ticket:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     log_action(
         db,
         request=request,
@@ -203,7 +204,7 @@ def update_ticket(
     return updated_ticket
 
 
-@router.delete("/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{ticket_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 def delete_ticket(
     ticket_id: int,
     request: Request,
@@ -216,7 +217,7 @@ def delete_ticket(
     title = t.title
     success = crud.delete_ticket(db, ticket_id)
     if not success:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     log_action(
         db,
         request=request,
@@ -242,9 +243,9 @@ def complete_ticket(
     try:
         ticket = crud.complete_ticket(db, ticket_id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     if not ticket:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     log_action(
         db,
         request=request,
@@ -270,9 +271,9 @@ def uncomplete_ticket(
     try:
         ticket = crud.uncomplete_ticket(db, ticket_id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     if not ticket:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     log_action(
         db,
         request=request,
@@ -298,7 +299,7 @@ def add_tags_to_ticket(
     _assert_ticket_write(db, current_user, ticket_id)
     ticket = crud.add_tags_to_ticket(db, ticket_id, tag_ids)
     if not ticket:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     log_action(
         db,
         request=request,
@@ -313,7 +314,7 @@ def add_tags_to_ticket(
     return ticket
 
 
-@router.delete("/{ticket_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{ticket_id}/tags/{tag_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 def remove_tag_from_ticket(
     ticket_id: int,
     tag_id: int,
@@ -326,7 +327,7 @@ def remove_tag_from_ticket(
     pid = t.project_id
     ticket = crud.remove_tag_from_ticket(db, ticket_id, tag_id)
     if not ticket:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     log_action(
         db,
         request=request,

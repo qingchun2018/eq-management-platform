@@ -32,6 +32,10 @@ export default function FilterSidebar({
     setFilterUserId,
     reset,
   } = useTicketStore();
+  // 通过 hook 订阅权限变更，避免 .getState() 在 render 时只取快照而无法响应切换项目/登录态变化
+  const canManageTagsInCurrentProject = useAuthStore((s) =>
+    s.canManageTagsInCurrentProject(),
+  );
 
   const toggleTagSelection = (tagId: number) => {
     if (selectedTagIds.includes(tagId)) {
@@ -187,7 +191,7 @@ export default function FilterSidebar({
 
         {/* Tag Manager (Mobile) */}
         <div className="md:hidden pt-4 border-t">
-          <TagManager disabled={!useAuthStore.getState().canManageTagsInCurrentProject()} />
+          <TagManager disabled={!canManageTagsInCurrentProject} />
         </div>
       </div>
     </aside>

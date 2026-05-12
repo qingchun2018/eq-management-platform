@@ -27,17 +27,21 @@ def list_assignable_users_for_project(db: Session, project_id: int) -> List[User
     if not proj:
         return []
 
-    member_rows: Sequence[ProjectMember] = (
-        db.query(ProjectMember).filter(ProjectMember.project_id == project_id).all()
+    # 一次 JOIN 拿到项目内非 VIEWER 成员对应的 User，避免逐成员单查（N+1）
+    member_users: Sequence[User] = (
+        db.query(User)
+        .join(ProjectMember, ProjectMember.user_id == User.id)
+        .filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.role != ProjectRole.VIEWER,
+        )
+        .all()
     )
+
     seen: set[int] = set()
     out: List[User] = []
-
-    for m in member_rows:
-        if m.role == ProjectRole.VIEWER:
-            continue
-        u = db.query(User).filter(User.id == m.user_id).first()
-        if u and u.id not in seen:
+    for u in member_users:
+        if u.id not in seen:
             seen.add(u.id)
             out.append(u)
 
@@ -71,8 +75,11 @@ def create_workflow_steps_for_ticket(
         raise ValueError(f"工作流步骤最多 {MAX_WORKFLOW_STEPS} 步")
 
     pid = ticket.project_id
+    # 预先一次性获取可分配用户 ID 集合，避免每步重复查询整张表
+    allowed_user_ids = {u.id for u in list_assignable_users_for_project(db, pid)}
+
     for i, item in enumerate(items, start=1):
-        if not user_id_assignable_for_project(db, pid, item.assignee_user_id):
+        if item.assignee_user_id not in allowed_user_ids:
             raise ValueError(f"步骤「{item.name}」的负责人无权作为该项目工作流处理人")
 
         st = WorkflowStepStatus.IN_PROGRESS if i == 1 else WorkflowStepStatus.PENDING
